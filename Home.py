@@ -70,9 +70,11 @@ def home():
                 preco_antes,preco_depois = mip.calcular_precos(index_setor_selecionado,aumento_imposto=alteracao_imposto/100,participacao_produto=participacao_produto/100)
                 diferencas = mip.calculate_differences(preco_antes, preco_depois)
 
-                top_diferenncas = mip.show_top_differences(diferencas, 10)
-                #Cria um dataframe com os resultados
-                st.write(top_diferenncas)
+                top_diferencas = mip.show_top_differences(diferencas, 20)
+
+                figura = mip.plot_differences(top_diferencas)
+                #Exibe o gráfico
+                st.pyplot(figura)
                 st.balloons()
 
 home()

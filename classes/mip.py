@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 dict_produtos = {
     0: 'Arroz, trigo e outros cereais',
     1: 'Milho em grão',
@@ -312,3 +312,21 @@ class MIPCalculator:
             setores_diferencas.append({"Setor": dict_setores[setor], "Diferença": valor_diferenca})
         
         return pd.DataFrame(setores_diferencas)
+    def plot_differences(self, difference):
+        # Extrair os setores e as diferenças
+        setores = difference['Setor'].values
+        valores = difference['Diferença'].values
+
+        # Criar figura de calor
+        fig, ax = plt.subplots(figsize=(10, 8))
+        cax = ax.matshow(valores.reshape(-1, 1), cmap='coolwarm')  # Converter valores para matriz 2D
+        plt.colorbar(cax)
+
+        # Configurar rótulos dos eixos
+        ax.set_yticks(np.arange(len(setores)))
+        ax.set_yticklabels(setores)
+        ax.set_xticks([0])  # Apenas uma coluna
+        ax.set_xticklabels(['Diferença'])
+
+        plt.title('Diferenças de Preços por Setor')
+        return fig
