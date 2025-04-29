@@ -201,7 +201,7 @@ dict_setores = {
 }
 
 class MIPCalculator:
-    def __init__(self, mip_file, tru_file):
+    def __init__(self, mip_file='dados/MIP_2019_67_PCE.xlsx', tru_file='dados/nivel_68_2010_2021_xls/68_tab2_2019.xls'):
         self.mip_file = mip_file
         self.tru_file = tru_file
         self.V = None
@@ -304,9 +304,11 @@ class MIPCalculator:
     def show_top_differences(self, difference, top_n=5):
         # Identificar setores com maiores diferenças
         max_diff_positions = np.argsort(difference.ravel())[::-1]
-        print("Setores com as maiores diferenças:")
+        setores_diferencas = []
+        
         for i in range(top_n):
             setor = max_diff_positions[i]
-            print(setor)
             valor_diferenca = difference[setor]
-            print(f"Setor {dict_setores[setor]}: Diferença = {valor_diferenca:.2f}")
+            setores_diferencas.append({"Setor": dict_setores[setor], "Diferença": valor_diferenca})
+        
+        return pd.DataFrame(setores_diferencas)

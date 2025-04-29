@@ -36,7 +36,7 @@ def home():
     )
     index_setor_selecionado = list(dict_produtos.keys())[list(dict_produtos.values()).index(produto_selecionado)]
     #Selecionar a paticipação por meio de um slider
-    participacao_setor = coluna_participacao.slider(
+    participacao_produto = coluna_participacao.slider(
         "Participação da NCM no produto (%)",
         min_value=0,
         max_value=100,
@@ -47,7 +47,7 @@ def home():
     
     alteracao_imposto = coluna_imposto.slider(
         "Percentual de alteração do imposto (%)",
-        min_value=-400,
+        min_value=0,
         max_value=400,
         value=0,
         step=1,
@@ -61,14 +61,18 @@ def home():
             st.warning("Selecione um produto")
         else:
             #Verifica se a participação é maior que 0
-            if participacao_setor <= 0:
+            if participacao_produto <= 0:
                 st.warning("A participação deve ser maior que 0")
             else:
                 #Calcula o impacto
-                mip = MIPCalculator(index_setor_selecionado,participacao_setor,alteracao_imposto)
-                diferencas = mip.calculate_differences()
+                mip = MIPCalculator()
+                #Calcula o impacto
+                preco_antes,preco_depois = mip.calcular_precos(index_setor_selecionado,aumento_imposto=alteracao_imposto/100,participacao_produto=participacao_produto/100)
+                diferencas = mip.calculate_differences(preco_antes, preco_depois)
+
+                top_diferenncas = mip.show_top_differences(diferencas, 10)
                 #Cria um dataframe com os resultados
-                st.write(diferencas)
+                st.write(top_diferenncas)
                 st.balloons()
 
 home()
