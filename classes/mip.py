@@ -222,11 +222,18 @@ class MIPCalculator:
 
     def load_data(self):
         # Carregar dados da MIP
+        #Oferta - Produção nacional
         self.V = pd.read_excel(self.mip_file, sheet_name='Recursos', skiprows=5, skipfooter=4, usecols=range(11, 78), header=None).transpose().to_numpy()
-        Imp = pd.read_excel(self.mip_file, sheet_name='Recursos', skiprows=5, skipfooter=4, usecols=[8], header=None).to_numpy()
+        
+        #Ofeta - Impostos consolidados
+        Imp = pd.read_excel(self.mip_file, sheet_name='Recursos', skiprows=5, skipfooter=4, usecols=[9], header=None).to_numpy()
+        #Demanda - Consumo intermediário nacional
         Un = pd.read_excel(self.mip_file, sheet_name='Usos Nacional', skiprows=5, skipfooter=4, usecols=range(2, 69), header=None).to_numpy()
+        #Demanda - Consumo final nacional
         Fn = pd.read_excel(self.mip_file, sheet_name='Usos Nacional', skiprows=5, skipfooter=4, usecols=range(70, 76), header=None).to_numpy()
+        #Demanda - Consumo intermediário importado
         Um = pd.read_excel(self.mip_file, sheet_name='Usos Importado', skiprows=5, skipfooter=4, usecols=range(2, 69), header=None).to_numpy()
+        #Demanda - Consumo final importado
         Fm = pd.read_excel(self.mip_file, sheet_name='Usos Importado', skiprows=5, skipfooter=4, usecols=range(70, 76), header=None).to_numpy()
         Impostos_Detalhados = pd.read_excel(self.mip_file, sheet_name='Recursos', skiprows=5, skipfooter=4, usecols=range(5, 9), header=None).to_numpy()
 
@@ -237,12 +244,16 @@ class MIPCalculator:
         Out_Imp = planilha.loc[10, :].to_numpy()
         Sub = planilha.loc[11, :].to_numpy()
         self.Imp_ou_sub = Out_Imp + Sub
+        self.VAB = planilha.iloc[0,:].to_numpy()#Valor adicionado bruto
 
         # Agregar dados
         agg_68_67 = np.concatenate((np.eye(67, 41), np.concatenate((np.zeros((40, 27)), np.eye(27, 27)))), axis=1)
         self.W = np.matmul(agg_68_67, self.W.transpose())
         self.RMB = np.matmul(agg_68_67, self.RMB.transpose())
         self.Imp_ou_sub = np.matmul(agg_68_67, self.Imp_ou_sub.transpose())
+        self.VAB = np.matmul(agg_68_67, self.VAB.transpose())
+        o = planilha.loc[13,:]# ocupações
+        o = np.matmul(agg_68_67, o.transpose())
 
         # Calcular market share
         g = np.matmul(self.V, np.ones(self.V.shape[1]))
@@ -273,15 +284,27 @@ class MIPCalculator:
         self.detalhes_importacao = pd.read_excel(self.mip_file,sheet_name='Recursos',skiprows=5,skipfooter=4,usecols=[78,79],header=None)
         self.detalhes_importacao['Participação Importação'] =self.detalhes_importacao[79]/(self.detalhes_importacao[78]+self.detalhes_importacao[79])
         self.detalhes_importacao['Participação Importação']=self.detalhes_importacao['Participação Importação']*100
+        self.detalhes_importacao = self.detalhes_importacao.rename(columns={78:'Produção',79:'Importação'})
 
-        self.total_importacao = np.matmul(self.D,self.detalhes_importacao[79])
+        self.total_importacao = np.matmul(self.D,self.detalhes_importacao['Importação'])
 
+
+        self.w = np.matmul(np.linalg.inv(np.diag(g)),self.W) # participação de remuneracoes pela produção total, para cada atividade
+        self.wa = np.matmul(np.linalg.inv(np.diag(g)),self.W+self.RMB) # participação de remuneracoes pela produção total, para cada atividade
+
+        self.y=np.matmul(np.linalg.inv(np.diag(g)),self.VAB) # participação de valor agregado pela produção total, para cada atividade
+        self.tp=np.matmul(np.matmul(np.linalg.inv(np.diag(g)),self.D),Imp)#Divisão de impostos pelo market share de cada produto
+
+        self.to=np.matmul(np.matmul(np.diag(self.y),np.linalg.inv(np.diag(self.VAB))),self.Imp_ou_sub)#Outros impostos sobre a produção
+
+        self.tn = self.tp[8]+self.to #Total de impostos sobre produção nacional
+
+        self.l=np.matmul(np.linalg.inv(np.diag(g)),o)#Postos de trabalho por unidade (Milhão) de produção 
 
 
     def calcular_precos(self,indice_produto, aumento_imposto=0.1, participacao_produto=0.3,precos_basicos=False):
         # Alterar impostos
         Impostos_Detalhados_alterados = self.impostos_detalhados.copy()
-        
         Impostos_Detalhados_alterados[indice_produto, 0] *= (1.0 + aumento_imposto * participacao_produto)
         Impostos_Detalhados_alterados = np.matmul(self.D, Impostos_Detalhados_alterados)
         preco_referencia = self.precos_basicos if precos_basicos else self.precos_mercado
@@ -330,3 +353,25 @@ class MIPCalculator:
 
         plt.title('Diferenças de Preços por Setor')
         return fig
+    def calculate_impactos(self,indice_produto, proporcao_substituicao_importacao=0.5):
+        print(self.detalhes_importacao.loc[indice_produto, 'Importação'])
+        valor = self.detalhes_importacao.loc[indice_produto, 'Importação']*proporcao_substituicao_importacao
+        delta = np.zeros(self.V.shape[1])
+        delta[indice_produto] = valor
+
+        impacto_setorial = delta @ self.D
+
+        impacto_total = self.L @ impacto_setorial
+
+        aumento_producao = np.matmul(np.matmul(self.y.transpose(),self.L),impacto_total)*1000000
+        aumento_pib = np.matmul(np.matmul(self.y.transpose()+self.tp,self.L),impacto_total).values[0]*1000000
+        aumento_ocupacoes = np.matmul(np.matmul(self.l,self.L),impacto_total)
+        aumento_massa_salarial = np.matmul(np.matmul(self.w,self.L),impacto_total)*1000000
+        aumento_massa_salarial_ampliada = np.matmul(np.matmul(self.wa,self.L),impacto_total)*1000000
+
+        return { 'Aumento PIB': aumento_pib,
+                 'Aumento Produção': aumento_producao,
+                 'Aumento Ocupações': aumento_ocupacoes,
+                 'Aumento Massa Salarial': aumento_massa_salarial,
+                 'Aumento Massa Salarial Ampliada': aumento_massa_salarial_ampliada
+                }
