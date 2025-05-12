@@ -26,8 +26,27 @@ def home():
         3. Escolha o aumento percentual no imposto de importação já existente.
         4. Acrescente a estimativa do percentual do que é importado do produto que será substituído por produto nacional, considerando que o aumento de imposto não direcionará todo o consumo para a produção nacional. 
         5. Clique em "Calcular" para obter o resultado.
+        6. O resultado será a variação de preço global após o aumento do imposto, a variação de preço dos 5 setores mais impactados após o aumento do imposto e o resultado dos principais efeitos multiplicadores ao substituir as importações.
+        7. O cálculo do preço global é feito a partir da variação percentual do preço em função do aumento no imposto de importação, conforme a fórmula:
         """
     )
+    st.latex(r'''
+             Preco = L_{ampliada} \cdot Custo
+            \\
+             
+    ''')
+    st.write('onde, ')
+    st.latex(r'''
+             Custo = \frac{W + I + RMB + \text{Outros Impostos}}{\text{Preço básico}}
+             \\
+             e
+             \\
+             L_{ampliada} = \text{Matriz de Leontief ampliada}
+    ''')
+    #    custo = self.W + self.share_impostos.sum(axis=1) + self.RMB + self.Imp_ou_sub + self.total_importacao
+    #    custo = np.divide(custo, preco_referencia)
+    #    preco_antes = np.matmul(self.L_plus, custo)
+             
     coluna_produto,coluna_participacao,coluna_imposto,coluna_substituicao_importacao = st.columns([3,1,1,1])
     produto_selecionado = coluna_produto.selectbox(
         "1. Selecione um produto",
