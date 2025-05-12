@@ -21,7 +21,7 @@ def home():
     st.write(
         """
         ### Como usar:
-        1. Selecione um produto das contas nacionais, que é um agregado de NCM's.
+        1. Selecione um produto das contas nacionais, que no caso será o equivalente a um agregado de ncm's ou serviços.
         2. Indique a participação da NCM que terá seu imposto alterado naquele produto (0 a 100%). Isso é necessário para ponderar o aumento no imposto e substituição de importações. As contas nacionais são muito agregadas e não seria razoável propagar o impacto do aumento de imposto de uma NCM para todo o produto.
         3. Escolha o aumento percentual no imposto de importação já existente.
         4. Acrescente a estimativa do percentual do que é importado do produto que será substituído por produto nacional, considerando que o aumento de imposto não direcionará todo o consumo para a produção nacional. 
