@@ -12,7 +12,6 @@ def home():
         layout="wide",
         initial_sidebar_state="expanded",
     )
-    st.title("Home")
     st.write(
         """
         ## Protótipo de cálculo de impacto de aumento de impostos
