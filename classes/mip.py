@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 dict_produtos = {
     0: 'Arroz, trigo e outros cereais',
     1: 'Milho em grão',
@@ -335,36 +334,19 @@ class MIPCalculator:
             setores_diferencas.append({"Setor": dict_setores[setor], "Diferença": valor_diferenca})
         
         return pd.DataFrame(setores_diferencas)
-    def plot_differences(self, difference):
-        # Extrair os setores e as diferenças
-        setores = difference['Setor'].values
-        valores = difference['Diferença'].values
 
-        # Criar figura de calor
-        fig, ax = plt.subplots(figsize=(10, 8))
-        cax = ax.matshow(valores.reshape(-1, 1), cmap='coolwarm')  # Converter valores para matriz 2D
-        plt.colorbar(cax)
-
-        # Configurar rótulos dos eixos
-        ax.set_yticks(np.arange(len(setores)))
-        ax.set_yticklabels(setores)
-        ax.set_xticks([0])  # Apenas uma coluna
-        ax.set_xticklabels(['Diferença'])
-
-        plt.title('Diferenças de Preços por Setor')
-        return fig
-    def calculate_impactos(self,indice_produto, proporcao_substituicao_importacao=0.5):
-        print(self.detalhes_importacao.loc[indice_produto, 'Importação'])
-        valor = self.detalhes_importacao.loc[indice_produto, 'Importação']*proporcao_substituicao_importacao
+    def calculate_impactos(self,indice_produto, participacao_produto =1,proporcao_substituicao_importacao=0.5):
+        valor = self.detalhes_importacao.loc[indice_produto, 'Importação']*proporcao_substituicao_importacao*participacao_produto
         delta = np.zeros(self.V.shape[1])
         delta[indice_produto] = valor
 
-        impacto_setorial = delta @ self.D
+        impacto_setorial = self.D @ delta
+
 
         impacto_total = self.L @ impacto_setorial
 
         aumento_producao = np.matmul(np.matmul(self.y.transpose(),self.L),impacto_total)*1000000
-        aumento_pib = np.matmul(np.matmul(self.y.transpose()+self.tp,self.L),impacto_total).values[0]*1000000
+        aumento_pib = np.matmul(np.matmul(self.y.transpose()+self.tp.transpose(),self.L),impacto_total)*1000000
         aumento_ocupacoes = np.matmul(np.matmul(self.l,self.L),impacto_total)
         aumento_massa_salarial = np.matmul(np.matmul(self.w,self.L),impacto_total)*1000000
         aumento_massa_salarial_ampliada = np.matmul(np.matmul(self.wa,self.L),impacto_total)*1000000
